@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Report;
+use Exception;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
@@ -12,7 +13,8 @@ class ReportController extends Controller
      */
     public function index()
     {
-        //
+        $reports = auth()->user()->reports;
+        return view('reports.index', compact('reports'));
     }
 
     /**
@@ -20,7 +22,7 @@ class ReportController extends Controller
      */
     public function create()
     {
-        //
+        return view('reports.create');
     }
 
     /**
@@ -28,7 +30,30 @@ class ReportController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            $request->validate([
+                'plant_name' => 'required|string|max:255',
+                'latitude' => 'required|numeric',
+                'longitude' => 'required|numeric',
+                'description' => 'nullable|string',
+                'photo' => 'nullable|image|max:2048',
+            ]);
+
+            $photoPath = $request->file('photo') ? $request->file('photo')->store('photos', 'public') : null;
+
+            $report = new Report();
+            $report->user_id = auth()->id();
+            $report->plant_name = $request->plant_name;
+            $report->latitude = $request->latitude;
+            $report->longitude = $request->longitude;
+            $report->description = $request->description;
+            $report->photo_path = $photoPath;
+            $report->save();
+
+            return redirect()->route('dashboard')->with('success', 'Report submitted successfully!');
+        } catch (Exception $ex) {
+            dd($ex);
+        }
     }
 
     /**
